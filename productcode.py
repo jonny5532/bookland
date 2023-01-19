@@ -45,9 +45,7 @@
 #     |
 #    ISBN13
 
-from types import *
 import re
-import string
 
 A="A";B="B";C="C";O="O";E="E"
 UPCABITS = [{O:"0001101",E:"1110010"},
@@ -87,9 +85,8 @@ EAN13BITS = [{A:"0001101", B:"0100111", C:"1110010"},
              {A:"0111011", B:"0010001", C:"1000100"},
              {A:"0110111", B:"0001001", C:"1001000"},
              {A:"0001011", B:"0010111", C:"1110100"}]
-EAN13PARITY = map(lambda x: x+"CCCCCC",
-                  ["AAAAAA","AABABB","AABBAB","AABBBA","ABAABB",
-                   "ABBAAB","ABBBAA","ABABAB","ABABBA","ABBABA"])
+EAN13PARITY = [x+"CCCCCC" for x in ["AAAAAA","AABABB","AABBAB","AABBBA","ABAABB",
+                   "ABBAAB","ABBBAA","ABABAB","ABABBA","ABBABA"]]
 
 class ProductCodeError(Exception):
     msgs=[]
@@ -107,7 +104,7 @@ def makeCharMap(*dicts):
         key = "%s" % i
         rval[key] = i
     for dict in dicts:
-        for key in dict.keys():
+        for key in list(dict.keys()):
             rval[key] = dict[key] 
     return rval
 
@@ -116,12 +113,12 @@ def parse(s,firstCharMap,lastCharMap,otherCharMap):
     # Parse errors get raised as KeyError.
     digits = []
     d = firstCharMap[s[0]]
-    if type(d)==IntType or d==None: digits.append(d)
+    if isinstance(d, int) or d==None: digits.append(d)
     for c in s[1:-1]:
         d = otherCharMap[c]
-        if type(d)==IntType or d==None: digits.append(d)
+        if isinstance(d, int) or d==None: digits.append(d)
     d = lastCharMap[s[-1]]
-    if type(d)==IntType or d==None: digits.append(d)
+    if isinstance(d, int) or d==None: digits.append(d)
     return digits
 
 class ProductCode:
@@ -132,12 +129,12 @@ class ProductCode:
     label = ""
     def __init__(self,s):
         self.givenString = s
-        self.s = string.upper(s)
+        self.s = s.upper()
         try:
             self.digits = parse(s,self.firstCharMap,
                                   self.lastCharMap,
                                   self.otherCharMap)
-        except KeyError,m:
+        except KeyError as m:
             msg = "%s: %s invalid here" % (self.type,m)
             raise ProductCodeError(msg)
         i = self.resolveChecksum()
@@ -193,12 +190,12 @@ class ProductCode:
             msgs.append("%s: Too many digits" % self.type)
         elif len(self.weights) > len(self.digits):
             msgs.append("%s: Not enough digits" % self.type)
-        if not self.s[0] in self.firstCharMap.keys():
+        if not self.s[0] in list(self.firstCharMap.keys()):
             msgs.append("%s: Illegal first character" % self.type)
-        if not self.s[-1] in self.lastCharMap.keys():
+        if not self.s[-1] in list(self.lastCharMap.keys()):
             msgs.append("%s: Illegal final character" % self.type)
         for c in self.s[1:-1]:
-            if not c in self.otherCharMap.keys():
+            if not c in list(self.otherCharMap.keys()):
                 msgs.append("%s: Illegal character" % self.type)
         if re.search("--|  ",self.s):
             msgs.append("%s: Repeated seperator" % self.type)
@@ -311,7 +308,7 @@ class ISBN10(ProductCode):
         self.firstCharMap = makeCharMap({"*":None})
         self.lastCharMap = makeCharMap({"*":None,"X":10,"x":10})
         self.otherCharMap = makeCharMap({"*":None,"-":"-"})
-        self.weights=range(10,0,-1)
+        self.weights=list(range(10,0,-1))
         self.magic=11
         ProductCode.__init__(self,s)
         self.bits = self.as13().bits
@@ -459,14 +456,14 @@ if __name__=="__main__":
     for s in tests:
         try:
             a = makeProductCode(s)
-            print s,"is valid as",a
-        except ProductCodeError,e:
-            print "%s invalid" % s
+            print(s,"is valid as",a)
+        except ProductCodeError as e:
+            print("%s invalid" % s)
 
     for s in tests:
         try:
             a = makeProductCode(s)
-            print a.bits
-        except ProductCodeError,e:
+            print(a.bits)
+        except ProductCodeError as e:
             pass
 
